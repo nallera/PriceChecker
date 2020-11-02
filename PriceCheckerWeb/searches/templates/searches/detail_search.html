@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Search for '{{ particular_search.query }}'</title>
+</head>
+<body>
+    <h1>Search query: '{{ particular_search.query }}' </h1>
+
+    <h2><a href="{% url 'update_prices' particular_search.pk %}">Update prices</a></h2>
+
+    <h2>Products:</h2>
+    <table>
+        {% for product in products %}
+            <tr>
+                <td>
+                    <img src="{{ product.img_url }}" width="100px">
+                </td>
+                <td>
+                    <h3><a href="{{ product.url }}">{{ product.name }}</a></h3>
+                    <h3>Price: ARS{{ product.price|floatformat:2 }}, USD{{ product.price_oficial|floatformat:2 }},
+                        USD(sol){{ product.price_solidario|floatformat:2 }},
+                        USD(blue){{ product.price_blue|floatformat:2 }}</h3>
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+
+    <h2><a href="{% url 'all_searches' %}">All searches</a></h2>
+</body>
+</html>

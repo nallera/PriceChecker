@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Saved Searches</title>
+</head>
+<body>
+    <h1>Saved searches:</h1>
+    {% for search in searches %}
+        <h3>Search query: <a href="{% url 'search' search.id %}">{{ search.query }}</a> </h3>
+    {% endfor %}
+
+    <h2><a href="{% url 'welcome' %}">Home</a></h2>
+</body>
+</html>
