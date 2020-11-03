@@ -1,19 +1,22 @@
 import json
 import requests
 from bs4 import BeautifulSoup
+from datetime import datetime
 
 from searches.models import ProductModel, ProductSearchModel
 
 
 class ProductSearch:
 
-    def __init__(self, query, search_id):
+    def __init__(self, query, search_id, number):
         self._query = str(query).replace(" ", "-")
         self.search_id = search_id
+        self.number = number
+        self.first_search()
 
-    @property
-    def mean_price(self):
-        return sum([prod.price for prod in self.products])/len(self.products)
+    @classmethod
+    def create_from_product_search(cls, product_search):
+        return cls(product_search.query, product_search.pk, product_search.number)
 
     def first_search(self):
         site = requests.get("https://listado.mercadolibre.com.ar/" + self._query)
@@ -21,8 +24,8 @@ class ProductSearch:
         if site.status_code == 200:
 
             content = BeautifulSoup(site.content, 'html.parser')
-            product_wrappers = content.find_all(class_='ui-search-result__content-wrapper')[0:5]
-            image_wrappers = content.find_all(class_='ui-search-result__image')[0:5]
+            product_wrappers = content.find_all(class_='ui-search-result__content-wrapper')[0:self.number]
+            image_wrappers = content.find_all(class_='ui-search-result__image')[0:self.number]
 
             products = self.scrape_wrappers(product_wrappers, image_wrappers)
 
@@ -30,16 +33,23 @@ class ProductSearch:
                 prod_model = ProductModel(url=product.url,
                                           name=product.name,
                                           price=product.price,
+                                          price_date=datetime.now(),
                                           img_url=product.img_url,
+                                          previous_prices="{}",
                                           search=ProductSearchModel(pk=self.search_id))
                 prod_model.save()
 
     def update(self):
 
-        products = [Product.create_from_product(single_product)
-                    for single_product in ProductModel.objects.filter(search_id=self.search_id)]
+        product_models = ProductModel.objects.filter(search_id=self.search_id)
 
-        for product in products:
+        products = {single_product: Product.create_from_product(single_product)
+                    for single_product in product_models}
+
+        for product_model, product in products.items():
+
+            print(product_model)
+            print(product)
             site = requests.get(product.url)
             content = BeautifulSoup(site.content, 'html.parser')
 
@@ -47,10 +57,27 @@ class ProductSearch:
             price = float(str(price_tags[0].text).replace(".", ""))
 
             if product.price != price:
-                ProductModel.objects.get(pk=product.pk).update(price=price)
+                previous_prices = json.loads(product_model.previous_prices)
+                if len(previous_prices) == 0:
+                    product_model.update(previous_prices=self.create_new_previous_prices(
+                        product.price, product.price_date))
+                else:
+                    product_model.update(previous_prices=self.add_new_previous_price(
+                        previous_prices, product.price, product.price_date))
+
+                product_model.update(price=price, price_date=datetime.now())
 
     @staticmethod
-    def scrape_wrappers(product_wrappers, image_wrappers):
+    def create_new_previous_prices(previous_price, previous_price_date):
+        return json.dumps({previous_price_date: previous_price})
+
+    @staticmethod
+    def add_new_previous_price(previous_prices_json, previous_price, previous_price_date):
+        previous_prices = json.loads(previous_prices_json)
+        previous_prices[previous_price_date] = previous_price
+        return json.dumps(previous_prices)
+
+    def scrape_wrappers(self, product_wrappers, image_wrappers):
         prices = [float(str(price_tag.text).replace(".", "")) for wrapper in product_wrappers
                   for price_tag in wrapper.find_all("span", class_="price-tag-fraction")]
         names = [name_tag.text for wrapper in product_wrappers
@@ -60,18 +87,20 @@ class ProductSearch:
         img_urls = [img_tag.get('data-src') for wrapper in image_wrappers
                     for img_tag in wrapper.find_all("img", class_="ui-search-result-image__element")]
 
-        products = list(map(Product, names, urls, prices, img_urls))
+        products = list(map(Product, names, urls, prices, [""]*self.number, img_urls, ["{}"]*self.number))
         return products
 
 
 class Product:
 
-    def __init__(self, name, url, price, img_url, prod_id=None):
+    def __init__(self, name, url, price, price_date, img_url, previous_prices, prod_id=None):
         self.prod_id = prod_id or 0
         self.name = name
         self.url = url
         self.price = price
+        self.price_date = price_date
         self.img_url = img_url
+        self.previous_prices = previous_prices
         self.conversor = Conversor("https://www.dolarsi.com/api/api.php?type=valoresprincipales")
 
     def __str__(self):
@@ -79,7 +108,8 @@ class Product:
 
     @classmethod
     def create_from_product(cls, product):
-        return cls(product.name, product.url, product.price, product.img_url, product.pk)
+        return cls(product.name, product.url, product.price, product.price_date,
+                   product.img_url, product.previous_prices, product.pk)
 
     @property
     def price_oficial(self):

@@ -7,24 +7,64 @@
 <body>
     <h1>Search query: '{{ particular_search.query }}' </h1>
 
-    <h2><a href="{% url 'update_prices' particular_search.pk %}">Update prices</a></h2>
+    {% if product_count > 0 %}
+        <h2><a href="{% url 'update_prices' particular_search.pk %}">Update prices</a></h2>
 
-    <h2>Products:</h2>
-    <table>
-        {% for product in products %}
-            <tr>
-                <td>
-                    <img src="{{ product.img_url }}" width="100px">
-                </td>
-                <td>
-                    <h3><a href="{{ product.url }}">{{ product.name }}</a></h3>
-                    <h3>Price: ARS{{ product.price|floatformat:2 }}, USD{{ product.price_oficial|floatformat:2 }},
-                        USD(sol){{ product.price_solidario|floatformat:2 }},
-                        USD(blue){{ product.price_blue|floatformat:2 }}</h3>
-                </td>
-            </tr>
-        {% endfor %}
-    </table>
+        <h2>Products:</h2>
+        <table>
+            {% for product in products %}
+                <tr>
+                    <td>
+                        <img src="{{ product.img_url }}" width="100px">
+                    </td>
+                    <td>
+                        <h3><a href="{{ product.url }}">{{ product.name }}</a></h3>
+                        <h4>Prices ({{ product.price_date|date:"d-M-Y H:i" }})</h4>
+                        <table>
+                            <tr>
+                                <th>
+                                    ARS
+                                </th>
+                                <th>
+                                    {{ product.price|floatformat:2 }}
+                                </th>
+                            </tr>
+                            <tr>
+                                <th>
+                                    USD
+                                </th>
+                                <th>
+                                    {{ product.price_oficial|floatformat:2 }}
+                                </th>
+                            </tr>
+                            <tr>
+                                <th>
+                                    USD(sol)
+                                </th>
+                                <th>
+                                    {{ product.price_solidario|floatformat:2 }}
+                                </th>
+                            </tr>
+                            <tr>
+                                <th>
+                                    USD(blue)
+                                </th>
+                                <th>
+                                    {{ product.price_blue|floatformat:2 }}
+                                </th>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+
+    {% else %}
+        <h2>There are no products for that query in MercadoLibre (or the search results format is
+        not yet supported)</h2>
+
+        <h3><a href="{% url 'delete_search' particular_search.pk %}">Delete Search</a> </h3>
+    {% endif %}
 
     <h2><a href="{% url 'all_searches' %}">All searches</a></h2>
 </body>

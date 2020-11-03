@@ -7,8 +7,11 @@
 <body>
     <h1>Saved searches:</h1>
     {% for search in searches %}
-        <h3>Search query: <a href="{% url 'search' search.id %}">{{ search.query }}</a> </h3>
+        <h3><a href="{% url 'search' search.id %}">{{ search.query }}</a>
+            <a href="{% url 'delete_search' search.id %}">Delete</a> </h3>
     {% endfor %}
+
+    <h2><a href="{% url 'new_search' %}">Add new search</a></h2>
 
     <h2><a href="{% url 'welcome' %}">Home</a></h2>
 </body>
