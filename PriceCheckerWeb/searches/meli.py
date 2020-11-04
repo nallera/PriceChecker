@@ -54,11 +54,11 @@ class ProductSearch:
             new_price = float(str(price_tags[0].text).replace(".", ""))
 
             if product.price != new_price:
-                previous_prices_json = json.loads(product_model.previous_prices)
-                if len(previous_prices_json) == 0:
+                previous_prices_dict = json.loads(product_model.previous_prices)
+                if len(previous_prices_dict) == 0:
                     product_model.previous_prices = self.create_new_previous_prices(product.price, product.price_date)
                 else:
-                    product_model.previous_prices = self.add_new_previous_price(previous_prices_json, product.price, product.price_date)
+                    product_model.previous_prices = self.add_new_previous_price(previous_prices_dict, product.price, product.price_date)
 
                 product_model.price = new_price
                 product_model.price_date = datetime.now()
@@ -67,13 +67,12 @@ class ProductSearch:
 
     @staticmethod
     def create_new_previous_prices(previous_price, previous_price_date):
-        return json.dumps({str(previous_price_date): previous_price})
+        return json.dumps({"price_values": [[str(previous_price_date), previous_price]]})
 
     @staticmethod
-    def add_new_previous_price(previous_prices_json, previous_price, previous_price_date):
-        previous_prices = json.loads(str(previous_prices_json))
-        previous_prices[str(previous_price_date)] = previous_price
-        return json.dumps(previous_prices)
+    def add_new_previous_price(previous_prices_dict, previous_price, previous_price_date):
+        previous_prices_dict["price_values"].append([str(previous_price_date), previous_price])
+        return json.dumps(previous_prices_dict)
 
     def scrape_wrappers(self, product_wrappers, image_wrappers):
         prices = [float(str(price_tag.text).replace(".", "")) for wrapper in product_wrappers
