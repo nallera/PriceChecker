@@ -12,7 +12,6 @@ class ProductSearch:
         self._query = str(query).replace(" ", "-")
         self.search_id = search_id
         self.number = number
-        self.first_search()
 
     @classmethod
     def create_from_product_search(cls, product_search):
@@ -48,33 +47,32 @@ class ProductSearch:
 
         for product_model, product in products.items():
 
-            print(product_model)
-            print(product)
             site = requests.get(product.url)
             content = BeautifulSoup(site.content, 'html.parser')
 
             price_tags = content.find_all(class_="price-tag-fraction")
-            price = float(str(price_tags[0].text).replace(".", ""))
+            new_price = float(str(price_tags[0].text).replace(".", ""))
 
-            if product.price != price:
-                previous_prices = json.loads(product_model.previous_prices)
-                if len(previous_prices) == 0:
-                    product_model.update(previous_prices=self.create_new_previous_prices(
-                        product.price, product.price_date))
+            if product.price != new_price:
+                previous_prices_json = json.loads(product_model.previous_prices)
+                if len(previous_prices_json) == 0:
+                    product_model.previous_prices = self.create_new_previous_prices(product.price, product.price_date)
                 else:
-                    product_model.update(previous_prices=self.add_new_previous_price(
-                        previous_prices, product.price, product.price_date))
+                    product_model.previous_prices = self.add_new_previous_price(previous_prices_json, product.price, product.price_date)
 
-                product_model.update(price=price, price_date=datetime.now())
+                product_model.price = new_price
+                product_model.price_date = datetime.now()
+
+                product_model.save()
 
     @staticmethod
     def create_new_previous_prices(previous_price, previous_price_date):
-        return json.dumps({previous_price_date: previous_price})
+        return json.dumps({str(previous_price_date): previous_price})
 
     @staticmethod
     def add_new_previous_price(previous_prices_json, previous_price, previous_price_date):
-        previous_prices = json.loads(previous_prices_json)
-        previous_prices[previous_price_date] = previous_price
+        previous_prices = json.loads(str(previous_prices_json))
+        previous_prices[str(previous_price_date)] = previous_price
         return json.dumps(previous_prices)
 
     def scrape_wrappers(self, product_wrappers, image_wrappers):

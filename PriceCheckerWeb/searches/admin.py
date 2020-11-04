@@ -1,3 +1,6 @@
 from django.contrib import admin
 
-# Register your models here.
+from searches.models import ProductModel, ProductSearchModel
+
+admin.site.register(ProductSearchModel)
+admin.site.register(ProductModel)

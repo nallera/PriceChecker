@@ -42,6 +42,7 @@ def new_search(request):
         if submitted_form.is_valid():
             saved_search_model = submitted_form.save()
             saved_search = ProductSearch.create_from_product_search(saved_search_model)
+            saved_search.first_search()
             return redirect('search', search_id=saved_search.search_id)
         else:
             return render(request, "searches/new_search.html", {"form": submitted_form})

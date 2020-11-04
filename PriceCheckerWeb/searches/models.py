@@ -9,8 +9,8 @@ class ProductSearchModel(models.Model):
 
 class ProductModel(models.Model):
 
-    url = models.CharField(max_length=200)
-    name = models.CharField(max_length=50)
+    url = models.CharField(max_length=500)
+    name = models.CharField(max_length=200)
     price = models.FloatField()
     price_date = models.DateTimeField()
     img_url = models.CharField(max_length=300)
