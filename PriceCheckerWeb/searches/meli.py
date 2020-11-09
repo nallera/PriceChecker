@@ -34,7 +34,8 @@ class ProductSearch:
                                           price=product.price,
                                           price_date=datetime.now(),
                                           img_url=product.img_url,
-                                          previous_prices="{}",
+                                          previous_prices=str(json.dumps({"date_values": [str(datetime.now())],
+                                                                          "price_values": [product.price]})),
                                           search=ProductSearchModel(pk=self.search_id))
                 prod_model.save()
 
@@ -54,24 +55,19 @@ class ProductSearch:
             new_price = float(str(price_tags[0].text).replace(".", ""))
 
             if product.price != new_price:
-                previous_prices_dict = json.loads(product_model.previous_prices)
-                if len(previous_prices_dict) == 0:
-                    product_model.previous_prices = self.create_new_previous_prices(product.price, product.price_date)
-                else:
-                    product_model.previous_prices = self.add_new_previous_price(previous_prices_dict, product.price, product.price_date)
-
                 product_model.price = new_price
                 product_model.price_date = datetime.now()
+
+                previous_prices_dict = json.loads(product_model.previous_prices)
+                product_model.previous_prices = \
+                    self.add_new_previous_price(previous_prices_dict, product_model.price, product_model.price_date)
 
                 product_model.save()
 
     @staticmethod
-    def create_new_previous_prices(previous_price, previous_price_date):
-        return json.dumps({"price_values": [[str(previous_price_date), previous_price]]})
-
-    @staticmethod
     def add_new_previous_price(previous_prices_dict, previous_price, previous_price_date):
-        previous_prices_dict["price_values"].append([str(previous_price_date), previous_price])
+        previous_prices_dict["price_values"].append(previous_price)
+        previous_prices_dict["date_values"].append(str(previous_price_date))
         return json.dumps(previous_prices_dict)
 
     def scrape_wrappers(self, product_wrappers, image_wrappers):

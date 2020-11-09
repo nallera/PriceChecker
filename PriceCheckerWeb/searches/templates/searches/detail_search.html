@@ -59,6 +59,8 @@
             {% endfor %}
         </table>
 
+        <div>{{ div|safe }}</div>
+
     {% else %}
         <h2>There are no products for that query in MercadoLibre (or the search results format is
         not yet supported)</h2>
@@ -67,5 +69,13 @@
     {% endif %}
 
     <h2><a href="{% url 'all_searches' %}">All searches</a></h2>
+
+    <script src="https://cdn.bokeh.org/bokeh/release/bokeh-2.2.3.min.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.bokeh.org/bokeh/release/bokeh-widgets-2.2.3.min.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.bokeh.org/bokeh/release/bokeh-tables-2.2.3.min.js"
+        crossorigin="anonymous"></script>
+    {{ script|safe }}
 </body>
 </html>

@@ -1,8 +1,16 @@
+import json
+from bokeh.models import DatetimeTickFormatter
 from django.forms import modelform_factory
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404, get_list_or_404, redirect
 from searches.models import ProductSearchModel, ProductModel
 from searches.meli import Product, ProductSearch
+from bokeh.plotting import figure
+from bokeh.embed import components
+import bokeh.palettes as pltts
+import pandas as pd
+import numpy as np
+import datetime
 
 
 def all_searches(request):
@@ -15,10 +23,43 @@ def search(request, search_id):
     product_models = ProductModel.objects.filter(search=search_id)
     products = [Product.create_from_product(single_product) for single_product in product_models]
 
+    fig = figure(x_axis_type='datetime',
+                 x_axis_label='Date',
+                 y_axis_label='Price',
+                 plot_width=800,
+                 plot_height=400)
+    fig.xaxis.major_label_orientation = 3.1415 / 2
+    fig.xaxis.formatter = DatetimeTickFormatter(
+        hours=["%m/%d %H:%M"],
+        days=["%m/%d %H:%M"],
+        months=["%m/%d %H:%M"],
+        years=["%m/%d %H:%M"],
+    )
+
+    palette = pltts.brewer['Set2'][len(products)]
+    pal_index = 0
+
+    for product in products:
+        prices = json.loads(product.previous_prices)['price_values']
+        dates_str = json.loads(product.previous_prices)['date_values']
+        dates = []
+        for d in dates_str:
+            d = d.split('.')[0]
+            dates.append(datetime.datetime.strptime(d, '%Y-%m-%d %H:%M:%S'))
+
+        fig.step(x=dates, y=prices, color=palette[pal_index], legend_label=product.name.split(' ')[0]+str(pal_index), mode="after")
+        fig.circle(x=dates, y=prices, color=palette[pal_index], fill_color="white", size=8)
+
+        pal_index += 1
+
+    script, div = components(fig)
+
     return render(request, 'searches/detail_search.html',
                   {'particular_search': particular_search,
                    'products': products,
-                   'product_count': len(products)})
+                   'product_count': len(products),
+                   'script': script,
+                   'div': div})
 
 
 def product(request, prod_id):
