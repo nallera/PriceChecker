@@ -37,9 +37,8 @@ def search(request, search_id):
     )
 
     palette = pltts.brewer['Set2'][len(products)]
-    pal_index = 0
 
-    for product in products:
+    for pal_index, product in enumerate(products):
         prices = json.loads(product.previous_prices)['price_values']
         dates_str = json.loads(product.previous_prices)['date_values']
         dates = []
@@ -49,8 +48,6 @@ def search(request, search_id):
 
         fig.step(x=dates, y=prices, color=palette[pal_index], legend_label=product.name.split(' ')[0]+str(pal_index), mode="after")
         fig.circle(x=dates, y=prices, color=palette[pal_index], fill_color="white", size=8)
-
-        pal_index += 1
 
     script, div = components(fig)
 
