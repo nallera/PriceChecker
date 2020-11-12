@@ -1,15 +1,12 @@
 import json
 from bokeh.models import DatetimeTickFormatter
 from django.forms import modelform_factory
-from django.http import HttpResponse
-from django.shortcuts import render, get_object_or_404, get_list_or_404, redirect
+from django.shortcuts import render, get_object_or_404, redirect
 from searches.models import ProductSearchModel, ProductModel
 from searches.meli import Product, ProductSearch
 from bokeh.plotting import figure
 from bokeh.embed import components
-import bokeh.palettes as pltts
-import pandas as pd
-import numpy as np
+import bokeh.palettes as palettes
 import datetime
 
 
@@ -36,17 +33,18 @@ def search(request, search_id):
         years=["%m/%d %H:%M"],
     )
 
-    palette = pltts.brewer['Set2'][len(products)]
+    palette = palettes.brewer['Set2'][len(products)]
 
-    for pal_index, product in enumerate(products):
-        prices = json.loads(product.previous_prices)['price_values']
-        dates_str = json.loads(product.previous_prices)['date_values']
+    for pal_index, single_product in enumerate(products):
+        prices = json.loads(single_product.previous_prices)['price_values']
+        dates_str = json.loads(single_product.previous_prices)['date_values']
         dates = []
         for d in dates_str:
             d = d.split('.')[0]
             dates.append(datetime.datetime.strptime(d, '%Y-%m-%d %H:%M:%S'))
 
-        fig.step(x=dates, y=prices, color=palette[pal_index], legend_label=product.name.split(' ')[0]+str(pal_index), mode="after")
+        fig.step(x=dates, y=prices, color=palette[pal_index], legend_label=single_product.name.split(
+            ' ')[0]+str(pal_index), mode="after")
         fig.circle(x=dates, y=prices, color=palette[pal_index], fill_color="white", size=8)
 
     script, div = components(fig)
@@ -64,10 +62,10 @@ def product(request, prod_id):
     return render(request, 'searches/detail_search.html', {'products': particular_product})
 
 
-def update_prices(request, search_id):
+def update_prices(_, search_id):
     search_model = get_object_or_404(ProductSearchModel, pk=search_id)
-    search = ProductSearch(search_model.query, search_model.pk, search_model.number)
-    search.update()
+    particular_search = ProductSearch(search_model.query, search_model.pk, search_model.number)
+    particular_search.update()
     return redirect('search', search_id=search_id)
 
 
@@ -89,6 +87,6 @@ def new_search(request):
         return render(request, "searches/new_search.html", {"form": form})
 
 
-def delete_search(request, search_id):
+def delete_search(_, search_id):
     ProductSearchModel.objects.get(pk=search_id).delete()
     return redirect('all_searches')
